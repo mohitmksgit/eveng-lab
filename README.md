@@ -159,31 +159,150 @@ This document describes the complete network topology configuration for the lab 
 - **INT01/INT02:** Customer networks → N9K switches
 - **LONDON_BRANCH:** Default via MPLS01 (preferred) and MPLS02 (backup)
 
-## Installation and Usage
+## Repository Overview
 
-### Prerequisites
+This is an **EVE-NG Network Lab** repository that automates the configuration of a complex multi-vendor network topology using Ansible. It includes:
+
+- **Cisco IOS/IOS-XE routers** (ISP, MPLS, Branch routers)
+- **Cisco Nexus 9K switches** (Data center switches with VPC)
+- **Palo Alto firewalls**
+- **BGP routing** with multiple ASNs
+- **GRE tunnels** for Cloudflare integration
+- **HSRP** for high availability
+
+## Prerequisites
+
+1. **EVE-NG** environment with the network topology deployed
+2. **Ansible** installed on your control machine (version 2.9+)
+3. **Python** with network automation libraries
+4. **SSH access** to all network devices on management network (192.168.16.0/24)
+
+## Setup Instructions
+
+### 1. Install Required Ansible Collections
+
 ```bash
-# Install Ansible collections
+# Install the required Ansible collections
 ansible-galaxy collection install -r requirements.yml
+```
 
-# Create vault file for passwords
+### 2. Set Up Ansible Vault (CRITICAL STEP)
+
+The vault stores sensitive information like device passwords. Here's how to set it up:
+
+#### Option A: Create new vault file
+```bash
+# Create encrypted vault file
 ansible-vault create group_vars/all/vault.yml
 ```
 
-### Running the Playbook
-```bash
-# Deploy all configurations
-ansible-playbook site.yml --ask-vault-pass
+When prompted, enter a vault password (remember this!). Then add your device credentials:
 
-# Deploy specific group
+```yaml
+---
+# Device authentication
+vault_username: "admin"
+vault_password: "YourDevicePassword123!"
+vault_enable_password: "YourEnablePassword123!"
+
+# Device-specific passwords (if different)
+device_passwords:
+  cisco_ios: "cisco123"
+  cisco_nxos: "admin123" 
+  palo_alto: "paloalto123"
+
+# SNMP community strings
+vault_snmp_community: "YourSNMPCommunity"
+```
+
+#### Option B: Use the example file as template
+```bash
+# Copy the example and encrypt it
+cp group_vars/all/vault_example.yml group_vars/all/vault.yml
+ansible-vault encrypt group_vars/all/vault.yml
+```
+
+### 3. Verify Your Inventory
+
+Check that your device management IPs match your EVE-NG topology:
+
+```bash
+# View inventory
+cat inventory.yml
+
+# Test connectivity to all devices
+ansible all -m ping --ask-vault-pass
+```
+
+### 4. Deploy Configurations
+
+#### Deploy to all devices:
+```bash
+ansible-playbook site.yml --ask-vault-pass
+```
+
+#### Deploy to specific device groups:
+```bash
+# Cisco IOS routers only
 ansible-playbook site.yml --limit cisco_ios --ask-vault-pass
-ansible-playbook site.yml --limit cisco_nxos --ask-vault-pass
+
+# Cisco switches only  
+ansible-playbook site.yml --limit cisco_switches --ask-vault-pass
+
+# Palo Alto firewall only
 ansible-playbook site.yml --limit palo_alto --ask-vault-pass
+
+# Single device
+ansible-playbook site.yml --limit ISP_ROUTER --ask-vault-pass
+```
+
+## Vault Management Commands
+
+```bash
+# Edit existing vault
+ansible-vault edit group_vars/all/vault.yml
+
+# View vault contents (decrypted)
+ansible-vault view group_vars/all/vault.yml
+
+# Change vault password
+ansible-vault rekey group_vars/all/vault.yml
+
+# Decrypt vault (not recommended for production)
+ansible-vault decrypt group_vars/all/vault.yml
+
+# Encrypt an existing file
+ansible-vault encrypt group_vars/all/vault.yml
 ```
 
 ### Verification Commands
 
-#### Cisco IOS/NXOS
+#### Post-Deployment Verification
+After deployment, verify configurations using these commands:
+
+```bash
+# Check BGP status on all IOS devices
+ansible cisco_ios -a "show ip bgp summary" --ask-vault-pass
+
+# Check interface status on all devices
+ansible cisco_ios -a "show ip interface brief" --ask-vault-pass
+
+# Check routing tables
+ansible cisco_ios -a "show ip route bgp" --ask-vault-pass
+
+# Check HSRP status on switches
+ansible cisco_switches -a "show hsrp brief" --ask-vault-pass
+
+# Check VPC status on Nexus switches
+ansible cisco_switches -a "show vpc" --ask-vault-pass
+
+# Check tunnel status
+ansible cisco_ios -a "show interface tunnel" --ask-vault-pass
+```
+
+#### Manual Device Verification Commands
+
+##### Cisco IOS/NXOS
 ```bash
 # BGP Status
 show ip bgp summary
@@ -200,9 +319,13 @@ show hsrp brief
 
 # VPC Status (NXOS)
 show vpc
+
+# GRE Tunnel Status
+show interface tunnel
+show ip route static
 ```
 
-#### Palo Alto
+##### Palo Alto
 ```bash
 # Interface Status
 show interface all
@@ -212,7 +335,140 @@ show running nat-policy
 
 # Zone Configuration
 show zone all
+
+# Route Table
+show routing route
 ```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+1. **Authentication Failures**
+   - Verify vault password: `ansible-vault view group_vars/all/vault.yml`
+   - Check device credentials and enable passwords
+   - Ensure SSH access to management network (192.168.16.0/24)
+
+2. **Connection Timeouts**
+   - Verify device management IP addresses in inventory.yml
+   - Check network connectivity: `ping <device_management_ip>`
+   - Verify SSH service is running on devices
+
+3. **Template Errors**
+   - Review Jinja2 templates in `templates/` directory
+   - Check variable definitions in `vars/` directory
+   - Validate YAML syntax: `ansible-playbook site.yml --syntax-check`
+
+4. **BGP Issues**
+   - Verify ASN assignments in inventory.yml
+   - Check BGP neighbor configurations in templates
+   - Validate IP addressing and routing
+
+5. **HSRP/VPC Issues**
+   - Check priority settings and preemption
+   - Verify keepalive links and peer configurations
+   - Validate VLAN configurations
+
+## Network Topology Quick Reference
+
+### Key Networks
+- **Management**: 192.168.16.0/24
+- **Customer LAN**: 10.100.1.0/24 (VLAN 100)
+- **Server Network**: 10.100.2.0/24 (VLAN 200)
+- **Public NAT Range**: 23.249.100.0/22
+- **GRE Tunnels**: 172.16.1.0/30 - 172.16.4.0/30
+
+### ASN Summary
+| Organization | ASN | Role |
+|--------------|-----|------|
+| Customer | 65001 | Main customer network |
+| Cloudflare | 13335 | CDN provider |
+| Bell Canada | 855 | ISP provider |
+| Zayo | 6461 | Fiber provider |
+| Google | 15169 | Public cloud |
+| MPLS Providers | 65100/65101 | WAN connectivity |
+
+## Security Best Practices
+
+1. **Vault Security**
+   - Never commit unencrypted passwords to version control
+   - Use strong, unique vault passwords
+   - Store vault passwords in secure password managers
+   - Regularly rotate device credentials
+
+2. **Access Control**
+   - Limit Ansible control machine access
+   - Use SSH keys where possible
+   - Implement network segmentation for management traffic
+   - Regular security audits of device configurations
+
+3. **Change Management**
+   - Test configurations in development environment first
+   - Use version control for all configuration changes
+   - Implement rollback procedures
+   - Document all network changes
+
+## File Structure
+
+```
+eveng-lab/
+├── ansible.cfg              # Ansible configuration
+├── inventory.yml            # Device inventory and groups
+├── site.yml                # Main playbook
+├── requirements.yml         # Ansible collection requirements
+├── group_vars/all/
+│   └── vault.yml           # Encrypted credentials (create this)
+├── vars/
+│   ├── network_vars.yml    # Network variables
+│   ├── interface_mapping.yml # Interface mappings
+│   └── mgmt_ips.yml       # Management IP assignments
+├── tasks/
+│   ├── ios_config.yml     # IOS configuration tasks
+│   ├── nxos_config.yml    # NXOS configuration tasks
+│   └── panos_config.yml   # Palo Alto configuration tasks
+└── templates/
+    ├── *.j2               # Jinja2 configuration templates
+    └── ...                # Device-specific templates
+```
+
+## Quick Start Guide
+
+### For New Users
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd eveng-lab
+   ```
+
+2. **Install dependencies**
+   ```bash
+   ansible-galaxy collection install -r requirements.yml
+   ```
+
+3. **Create vault with your credentials**
+   ```bash
+   ansible-vault create group_vars/all/vault.yml
+   # Add your device passwords when prompted
+   ```
+
+4. **Test connectivity**
+   ```bash
+   ansible all -m ping --ask-vault-pass
+   ```
+
+5. **Deploy configuration**
+   ```bash
+   ansible-playbook site.yml --ask-vault-pass
+   ```
+
+### For Experienced Users
+
+- Modify `inventory.yml` for your specific EVE-NG topology
+- Customize templates in `templates/` directory
+- Adjust variables in `vars/` directory
+- Use `--limit` flag for targeted deployments
+- Implement additional verification tasks as needed
 
 ## Notes
 - All devices use SSH for management access
