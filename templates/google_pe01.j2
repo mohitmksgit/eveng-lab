@@ -1,0 +1,52 @@
+!
+hostname Google_PE01
+!
+ip cef
+!
+interface Loopback0
+ description Google DNS
+ ip address 8.8.8.8 255.255.255.255
+!
+interface ethernet0/1
+ description Link to Bell_Router_01
+ ip address 172.16.2.2 255.255.255.252
+ no shutdown
+!
+interface ethernet0/2
+ description Link to Zayo_Router_01
+ ip address 172.16.1.2 255.255.255.252
+ no shutdown
+!
+interface ethernet0/3
+ description Link to Server_Test
+ ip address 8.8.8.1 255.255.255.252
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['Google_PE01'] }} 255.255.255.0
+ no shutdown
+!
+router bgp {{ google_asn }}
+ bgp log-neighbor-changes
+ neighbor 172.16.2.1 remote-as {{ bell_asn }}
+ neighbor 172.16.2.1 description Bell_Router_01
+ neighbor 172.16.1.1 remote-as {{ zayo_asn }}
+ neighbor 172.16.1.1 description Zayo_Router_01
+ !
+ address-family ipv4
+  network 8.8.8.8 mask 255.255.255.255
+  network 8.8.8.0 mask 255.255.255.252
+  neighbor 172.16.2.1 activate
+  neighbor 172.16.1.1 activate
+ exit-address-family
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

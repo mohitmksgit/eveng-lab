@@ -1,0 +1,27 @@
+---
+- name: Configure Management Interface on NXOS
+  cisco.nxos.nxos_config:
+    lines:
+      - "ip address {{ mgmt_ip }}/24"
+      - "no shutdown"
+    parents: "interface mgmt0"
+  vars:
+    mgmt_ip: "{{ mgmt_ips[inventory_hostname] }}"
+
+- name: Configure VRF Management
+  cisco.nxos.nxos_config:
+    lines:
+      - "vrf context management"
+      - "ip route 0.0.0.0/0 {{ mgmt_gateway }}"
+
+# N9K01 Configuration
+- name: Configure N9K01
+  cisco.nxos.nxos_config:
+    src: "templates/n9k01.j2"
+  when: inventory_hostname == 'N9K01'
+
+# N9K02 Configuration
+- name: Configure N9K02
+  cisco.nxos.nxos_config:
+    src: "templates/n9k02.j2"
+  when: inventory_hostname == 'N9K02'

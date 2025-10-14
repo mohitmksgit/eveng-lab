@@ -1,0 +1,45 @@
+!
+hostname L2_DC_SW01
+!
+vlan 100
+ name LAN_VLAN
+!
+interface ethernet0/1
+ description Link to PaloAlto e1/3
+ switchport mode access
+ switchport access vlan 100
+ no shutdown
+!
+interface ethernet0/2
+ description Link to N9K01 Ethernet1/1
+ switchport mode access
+ switchport access vlan 100
+ no shutdown
+!
+interface ethernet0/3
+ description Link to N9K02 Ethernet1/1
+ switchport mode access
+ switchport access vlan 100
+ no shutdown
+!
+interface ethernet1/0
+ switchport mode access
+ switchport access vlan 100
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['L2_DC_SW01'] }} 255.255.255.0
+ no shutdown
+!
+ip default-gateway {{ mgmt_gateway }}
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

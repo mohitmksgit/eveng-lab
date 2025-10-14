@@ -1,0 +1,93 @@
+---
+- name: Configure Management Interface
+  cisco.ios.ios_config:
+    lines:
+      - "ip address {{ mgmt_ip }} {{ mgmt_mask }}"
+      - "no shutdown"
+    parents: "interface {{ mgmt_interface }}"
+  vars:
+    mgmt_ip: "{{ mgmt_ips[inventory_hostname] }}"
+    mgmt_mask: "255.255.255.0"
+    mgmt_interface: >-
+      {%- if inventory_hostname in groups['cisco_nxos'] -%}
+      mgmt0
+      {%- else -%}
+      ethernet0/0
+      {%- endif -%}
+
+- name: Configure Default Route for Management
+  cisco.ios.ios_config:
+    lines:
+      - "ip route 0.0.0.0 0.0.0.0 {{ mgmt_gateway }}"
+    match: none
+
+# ISP Router Configuration
+- name: Configure ISP Router
+  cisco.ios.ios_config:
+    src: "templates/isp_router.j2"
+  when: inventory_hostname == 'ISP_ROUTER'
+
+# INT01 Router Configuration (Restored)
+- name: Configure INT01 Router
+  cisco.ios.ios_config:
+    src: "templates/int01.j2"
+  when: inventory_hostname == 'INT01'
+
+# INT02 Router Configuration (Restored)
+- name: Configure INT02 Router
+  cisco.ios.ios_config:
+    src: "templates/int02.j2"
+  when: inventory_hostname == 'INT02'
+
+# Cloudflare_PE01 Router Configuration (renamed from cf_ce_01)
+- name: Configure Cloudflare_PE01 Router
+  cisco.ios.ios_config:
+    src: "templates/cloudflare_pe01.j2"
+  when: inventory_hostname == 'Cloudflare_PE01'
+
+# Zayo Router Configuration
+- name: Configure Zayo Router
+  cisco.ios.ios_config:
+    src: "templates/zayo_router_01.j2"
+  when: inventory_hostname == 'Zayo_Router_01'
+
+# Bell Router Configuration
+- name: Configure Bell Router
+  cisco.ios.ios_config:
+    src: "templates/bell_router_01.j2"
+  when: inventory_hostname == 'Bell_Router_01'
+
+# Google PE01 Router Configuration (renamed from Google_PE)
+- name: Configure Google PE01 Router
+  cisco.ios.ios_config:
+    src: "templates/google_pe01.j2"
+  when: inventory_hostname == 'Google_PE01'
+
+# MPLS01 Router Configuration
+- name: Configure MPLS01 Router
+  cisco.ios.ios_config:
+    src: "templates/mpls01.j2"
+  when: inventory_hostname == 'MPLS01'
+
+# MPLS02 Router Configuration
+- name: Configure MPLS02 Router
+  cisco.ios.ios_config:
+    src: "templates/mpls02.j2"
+  when: inventory_hostname == 'MPLS02'
+
+# London Router Configuration
+- name: Configure London Router
+  cisco.ios.ios_config:
+    src: "templates/london_router_01.j2"
+  when: inventory_hostname == 'London_Router_01'
+
+# L2 Switch Configurations
+- name: Configure L2_DC_SW01
+  cisco.ios.ios_config:
+    src: "templates/l2_dc_sw01.j2"
+  when: inventory_hostname == 'L2_DC_SW01'
+
+- name: Configure L2_DC_SW02
+  cisco.ios.ios_config:
+    src: "templates/l2_dc_sw02.j2"
+  when: inventory_hostname == 'L2_DC_SW02'

@@ -1,0 +1,41 @@
+!
+hostname BELL
+!
+ip cef
+!
+interface GigabitEthernet0/0
+ description Link to CF_CE_01
+ ip address 198.51.100.6 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description Link to Equinix
+ ip address 198.51.100.13 255.255.255.252
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['BELL'] }} 255.255.255.0
+ no shutdown
+!
+router bgp {{ bell_asn }}
+ bgp log-neighbor-changes
+ neighbor 198.51.100.5 remote-as {{ cloudflare_asn }}
+ neighbor 198.51.100.5 description CF_CE_01
+ neighbor 198.51.100.14 remote-as {{ equinix_asn }}
+ neighbor 198.51.100.14 description Equinix
+ !
+ address-family ipv4
+  neighbor 198.51.100.5 activate
+  neighbor 198.51.100.14 activate
+ exit-address-family
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

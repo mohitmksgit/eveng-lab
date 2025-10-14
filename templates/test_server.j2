@@ -1,0 +1,26 @@
+!
+hostname Server_Test
+!
+ip cef
+!
+interface ethernet0/1
+ description Link to Google_PE_01
+ ip address 8.8.8.2 255.255.255.252
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['Server_Test'] }} 255.255.255.0
+ no shutdown
+!
+ip route 0.0.0.0 0.0.0.0 8.8.8.1
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

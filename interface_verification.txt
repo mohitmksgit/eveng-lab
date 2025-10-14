@@ -1,0 +1,87 @@
+# Interface Verification Script
+# Please update this based on your actual topology image
+
+# Current Interface Assignments in Templates:
+# =============================================
+
+# ISP_ROUTER:
+# - GigabitEthernet0/0 → INT01
+# - GigabitEthernet0/1 → INT02  
+# - GigabitEthernet0/2 → Palo Alto Firewall
+# - ethernet0/0 → Management
+
+# INT01:
+# - GigabitEthernet0/0 → ISP_ROUTER
+# - GigabitEthernet0/1 → CF_CE_01
+# - GigabitEthernet0/2 → N9K01
+# - ethernet0/0 → Management
+
+# INT02:
+# - GigabitEthernet0/0 → ISP_ROUTER
+# - GigabitEthernet0/1 → CF_CE_01
+# - GigabitEthernet0/2 → N9K02
+# - ethernet0/0 → Management
+
+# N9K01:
+# - Ethernet1/1 → INT01
+# - Ethernet1/2 → N9K02 (VPC Peer Link)
+# - Ethernet1/3 → N9K02 (VPC Peer Link)
+# - Ethernet1/4 → N9K02 (VPC Keepalive)
+# - Ethernet1/5 → Palo Alto Firewall
+# - mgmt0 → Management
+
+# N9K02:
+# - Ethernet1/1 → INT02
+# - Ethernet1/2 → N9K01 (VPC Peer Link)
+# - Ethernet1/3 → N9K01 (VPC Peer Link)
+# - Ethernet1/4 → N9K01 (VPC Keepalive)
+# - Ethernet1/5 → Palo Alto Firewall
+# - mgmt0 → Management
+
+# CF_CE_01:
+# - GigabitEthernet0/0 → INT01
+# - GigabitEthernet0/1 → INT02
+# - GigabitEthernet0/2 → ZAYO
+# - GigabitEthernet0/3 → BELL
+# - ethernet0/0 → Management
+
+# Palo Alto Firewall:
+# - ethernet1/1 → Internet (ISP_ROUTER)
+# - ethernet1/2 → Internal (N9K switches via port-channel)
+# - ethernet1/3 → DMZ (N9K switches via port-channel)
+
+# PLEASE VERIFY AGAINST YOUR TOPOLOGY IMAGE:
+# ==========================================
+# 1. Are the GigabitEthernet interface numbers correct?
+# 2. Are the Ethernet interface numbers correct on N9K switches?
+# 3. Do the VPC peer links use Eth1/2 and Eth1/3?
+# 4. Does VPC keepalive use Eth1/4?
+# 5. Are there any FastEthernet interfaces instead of GigabitEthernet?
+# 6. Any additional interfaces or connections missing?
+
+# Common EVE-NG Interface Mappings:
+# =================================
+# Cisco IOS Routers:
+# - GigabitEthernet0/0, 0/1, 0/2, 0/3...
+# - FastEthernet0/0, 0/1 (on older models)
+# - Serial0/0, 0/1 (for WAN links)
+
+# Cisco Nexus 9K:
+# - Ethernet1/1, 1/2, 1/3... (line cards)
+# - mgmt0 (management)
+
+# Palo Alto:
+# - ethernet1/1, 1/2, 1/3... (data interfaces)
+# - ethernet1/1 (management, if separate)
+
+# UPDATE NEEDED:
+# ==============
+# Please check the topology image and update the interface names
+# in the following template files if they don't match:
+# - templates/isp_router.j2
+# - templates/int01.j2
+# - templates/int02.j2
+# - templates/n9k01.j2
+# - templates/n9k02.j2
+# - templates/cf_ce_01.j2
+# - etc.

@@ -1,0 +1,97 @@
+!
+hostname Cloudflare_PE01
+!
+ip cef
+!
+interface Loopback1
+ description Tunnel Source 1
+ ip address 203.0.113.10 255.255.255.255
+!
+interface Loopback2
+ description Tunnel Source 2
+ ip address 203.0.113.14 255.255.255.255
+!
+interface Loopback100
+ description Cloudflare Public IP
+ ip address 1.1.1.1 255.255.255.255
+!
+interface ethernet0/1
+ description Link to Zayo_Router_01
+ ip address 198.51.100.10 255.255.255.252
+ no shutdown
+!
+interface ethernet0/2
+ description Link to Bell_Router_01
+ ip address 198.51.100.5 255.255.255.252
+ no shutdown
+!
+interface Tunnel1
+ description GRE Tunnel 1 from INT01
+ ip address 172.16.1.2 255.255.255.252
+ tunnel source Loopback1
+ tunnel destination {{ int01_customer_ip }}
+ tunnel mode gre ip
+!
+interface Tunnel2
+ description GRE Tunnel 2 from INT01
+ ip address 172.16.2.2 255.255.255.252
+ tunnel source Loopback2
+ tunnel destination {{ int01_customer_ip }}
+ tunnel mode gre ip
+!
+interface Tunnel3
+ description GRE Tunnel 3 from INT02
+ ip address 172.16.3.2 255.255.255.252
+ tunnel source Loopback1
+ tunnel destination {{ int02_customer_ip }}
+ tunnel mode gre ip
+!
+interface Tunnel4
+ description GRE Tunnel 4 from INT02
+ ip address 172.16.4.2 255.255.255.252
+ tunnel source Loopback2
+ tunnel destination {{ int02_customer_ip }}
+ tunnel mode gre ip
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['Cloudflare_PE01'] }} 255.255.255.0
+ no shutdown
+!
+router bgp {{ cloudflare_asn }}
+ bgp log-neighbor-changes
+ neighbor 198.51.100.9 remote-as {{ zayo_asn }}
+ neighbor 198.51.100.9 description Zayo_Router_01
+ neighbor 198.51.100.6 remote-as {{ bell_asn }}
+ neighbor 198.51.100.6 description Bell_Router_01
+ neighbor 172.16.1.1 remote-as {{ int_routers_asn }}
+ neighbor 172.16.1.1 description INT01_Tunnel1
+ neighbor 172.16.2.1 remote-as {{ int_routers_asn }}
+ neighbor 172.16.2.1 description INT01_Tunnel2
+ neighbor 172.16.3.1 remote-as {{ int_routers_asn }}
+ neighbor 172.16.3.1 description INT02_Tunnel3
+ neighbor 172.16.4.1 remote-as {{ int_routers_asn }}
+ neighbor 172.16.4.1 description INT02_Tunnel4
+ !
+ address-family ipv4
+  network 1.1.1.1 mask 255.255.255.255
+  network 23.249.100.0 mask 255.255.252.0
+  network 203.0.113.10 mask 255.255.255.255
+  network 203.0.113.14 mask 255.255.255.255
+  neighbor 198.51.100.9 activate
+  neighbor 198.51.100.6 activate
+  neighbor 172.16.1.1 activate
+  neighbor 172.16.2.1 activate
+  neighbor 172.16.3.1 activate
+  neighbor 172.16.4.1 activate
+ exit-address-family
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

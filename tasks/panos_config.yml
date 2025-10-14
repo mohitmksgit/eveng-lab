@@ -1,0 +1,118 @@
+---
+- name: Configure PaloAlto Administrator Account
+  paloaltonetworks.panos.panos_administrator:
+    admin_username: "admin"
+    admin_password: "admin"
+    role: "superuser"
+
+- name: Configure PaloAlto Management Interface
+  paloaltonetworks.panos.panos_management_profile:
+    name: "mgmt-profile"
+    ping: true
+    ssh: true
+    https: true
+
+- name: Configure PaloAlto Ethernet Interfaces
+  paloaltonetworks.panos.panos_interface:
+    if_name: "{{ item.interface }}"
+    mode: "layer3"
+    ip: "{{ item.ip }}"
+    management_profile: "mgmt-profile"
+  loop:
+    - { interface: "ethernet1/1", ip: "{{ paloalto_external_ip }}/24" }  # Internet (External network)
+    - { interface: "ethernet1/2", ip: "{{ paloalto_customer_ip }}/29" }  # Internal (Customer HSRP VLAN)
+    - { interface: "ethernet1/3", ip: "10.100.2.254/24" }   # DMZ
+
+- name: Configure Security Zones
+  paloaltonetworks.panos.panos_zone:
+    zone: "{{ item.zone }}"
+    mode: "layer3"
+    interface: "{{ item.interface }}"
+  loop:
+    - { zone: "Internet", interface: ["ethernet1/1"] }
+    - { zone: "Internal", interface: ["ethernet1/2"] }
+    - { zone: "DMZ", interface: ["ethernet1/3"] }
+
+- name: Create Address Objects
+  paloaltonetworks.panos.panos_address_object:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    address_type: "{{ item.type }}"
+  loop:
+    - { name: "Internal_Networks", value: "10.100.0.0/16", type: "ip-netmask" }
+    - { name: "DMZ_Networks", value: "10.100.2.0/24", type: "ip-netmask" }
+    - { name: "Customer_NAT_Aggregate", value: "23.249.100.0/22", type: "ip-netmask" }
+
+- name: Create Service Objects
+  paloaltonetworks.panos.panos_service_object:
+    name: "{{ item.name }}"
+    destination_port: "{{ item.port }}"
+    protocol: "{{ item.protocol }}"
+  loop:
+    - { name: "HTTP", port: "80", protocol: "tcp" }
+    - { name: "HTTPS", port: "443", protocol: "tcp" }
+    - { name: "DNS", port: "53", protocol: "udp" }
+
+- name: Create Temporary Allow Policy for DMZ Internet Access
+  paloaltonetworks.panos.panos_security_rule:
+    rule_name: "DMZ_Internet_Allow_Temp"
+    description: "Temporary allow rule for DMZ to Internet - REMOVE IN PRODUCTION"
+    source_zone: ["DMZ"]
+    destination_zone: ["Internet"]
+    source_ip: ["10.100.2.0/24"]
+    destination_ip: ["any"]
+    application: ["web-browsing", "ssl", "dns"]
+    service: ["application-default"]
+    action: "allow"
+    log_setting: "default"
+
+- name: Create Internal to Internet Allow Policy
+  paloaltonetworks.panos.panos_security_rule:
+    rule_name: "Internal_Internet_Allow"
+    description: "Allow Internal networks to Internet"
+    source_zone: ["Internal"]
+    destination_zone: ["Internet"]
+    source_ip: ["10.100.0.0/16"]
+    destination_ip: ["any"]
+    application: ["web-browsing", "ssl", "dns", "ping"]
+    service: ["application-default"]
+    action: "allow"
+    log_setting: "default"
+
+- name: Create Source NAT Rule for Internal Networks
+  paloaltonetworks.panos.panos_nat_rule:
+    rule_name: "Internal_SNAT"
+    description: "Source NAT for Internal networks"
+    source_zone: ["Internal"]
+    destination_zone: ["Internet"]
+    source_ip: ["10.100.0.0/16"]
+    destination_ip: ["any"]
+    service: "any"
+    snat_type: "dynamic-ip-and-port"
+    snat_interface: "ethernet1/1"
+
+- name: Create Source NAT Rule for DMZ Networks
+  paloaltonetworks.panos.panos_nat_rule:
+    rule_name: "DMZ_SNAT"
+    description: "Source NAT for DMZ networks"
+    source_zone: ["DMZ"]
+    destination_zone: ["Internet"]
+    source_ip: ["10.100.2.0/24"]
+    destination_ip: ["any"]
+    service: "any"
+    snat_type: "dynamic-ip-and-port"
+    snat_interface: "ethernet1/1"
+
+- name: Create Static Routes
+  paloaltonetworks.panos.panos_static_route:
+    name: "{{ item.name }}"
+    destination: "{{ item.destination }}"
+    nexthop: "{{ item.nexthop }}"
+    interface: "{{ item.interface }}"
+  loop:
+    - { name: "Default_Route", destination: "0.0.0.0/0", nexthop: "{{ customer_hsrp_vip }}", interface: "ethernet1/2" }
+    - { name: "Customer_Networks", destination: "10.100.0.0/16", nexthop: "{{ customer_hsrp_vip }}", interface: "ethernet1/2" }
+
+- name: Commit Configuration
+  paloaltonetworks.panos.panos_commit_firewall:
+    description: "Ansible automated configuration commit"

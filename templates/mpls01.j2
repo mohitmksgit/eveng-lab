@@ -1,0 +1,37 @@
+!
+hostname MPLS01
+!
+ip cef
+!
+interface GigabitEthernet0/0
+ description Link to London Branch
+ ip address 172.20.1.1 255.255.255.252
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['MPLS01'] }} 255.255.255.0
+ no shutdown
+!
+router bgp 65100
+ bgp log-neighbor-changes
+ neighbor 172.20.1.2 remote-as 65200
+ neighbor 172.20.1.2 description London_Branch
+ !
+ address-family ipv4
+  network 0.0.0.0
+  neighbor 172.20.1.2 activate
+  neighbor 172.20.1.2 default-originate
+ exit-address-family
+!
+ip route 0.0.0.0 0.0.0.0 Null0
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

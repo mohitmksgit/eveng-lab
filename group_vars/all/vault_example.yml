@@ -1,0 +1,9 @@
+# Example vault file - encrypt with ansible-vault
+---
+vault_password: "YourSecurePassword123!"
+
+# Device specific passwords if different
+device_passwords:
+  cisco_ios: "cisco123"
+  cisco_nxos: "admin123"
+  palo_alto: "paloalto123"

@@ -1,0 +1,73 @@
+---
+all:
+  children:
+    cisco_ios:
+      hosts:
+        ISP_ROUTER:
+          ansible_host: 192.168.16.101
+          ansible_network_os: ios
+          asn: 15830
+        INT01:
+          ansible_host: 192.168.16.102
+          ansible_network_os: ios
+          asn: 62881
+        INT02:
+          ansible_host: 192.168.16.103
+          ansible_network_os: ios
+          asn: 62881
+        Cloudflare_PE01:
+          ansible_host: 192.168.16.104
+          ansible_network_os: ios
+          asn: 13335
+        Zayo_Router_01:
+          ansible_host: 192.168.16.105
+          ansible_network_os: ios
+          asn: 6461
+        Bell_Router_01:
+          ansible_host: 192.168.16.106
+          ansible_network_os: ios
+          asn: 577
+        Google_PE01:
+          ansible_host: 192.168.16.107
+          ansible_network_os: ios
+          asn: 15169
+        Server_Test:
+          ansible_host: 192.168.16.108
+          ansible_network_os: ios
+        MPLS01:
+          ansible_host: 192.168.16.109
+          ansible_network_os: ios
+          asn: 65001
+        MPLS02:
+          ansible_host: 192.168.16.110
+          ansible_network_os: ios
+          asn: 65001
+        London_Router_01:
+          ansible_host: 192.168.16.111
+          ansible_network_os: ios
+          asn: 65300
+    cisco_switches:
+      hosts:
+        L2_DC_SW01:
+          ansible_host: 192.168.16.120
+          ansible_network_os: ios
+          vlan: 100
+        L2_DC_SW02:
+          ansible_host: 192.168.16.121
+          ansible_network_os: ios
+          vlan: 200
+    palo_alto:
+      hosts:
+        PaloAlto:
+          ansible_host: 192.168.16.130
+          ansible_network_os: panos
+          ansible_user: admin
+          ansible_password: admin
+          ansible_connection: httpapi
+
+  vars:
+    # Cisco device credentials
+    ansible_user: admin
+    ansible_password: admin123
+    ansible_connection: network_cli
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

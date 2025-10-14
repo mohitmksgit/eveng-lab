@@ -1,0 +1,80 @@
+# Network Variables
+---
+# Management Network
+mgmt_network: 192.168.16.0/24
+mgmt_gateway: 192.168.16.1
+
+# Toronto DC Networks
+toronto_lan: 10.100.1.0/24
+toronto_server: 10.100.2.0/24
+
+# London Branch Networks
+london_lan: 10.40.0.0/24
+
+# Customer NAT Prefixes
+customer_nat_prefix: 23.249.100.0/22
+cf_specific_1: 23.249.100.0/23
+cf_specific_2: 23.249.102.0/23
+
+# ASN Assignments (Corrected with exact device names)
+isp_router_asn: 15830         # ISP_ROUTER (is Equinix)
+int_routers_asn: 62881        # INT01 & INT02 (iBGP peers)
+cloudflare_asn: 13335         # Cloudflare_PE01 (renamed from cf_ce_01)
+zayo_asn: 6461               # Zayo_Router_01 (kept)
+bell_asn: 577                # Bell_Router_01
+google_asn: 15169            # Google_PE01 (renamed from Google_PE)
+mpls_asn: 65001              # MPLS01 & MPLS02 (same ASN)
+london_asn: 65300            # London_Router_01 (kept)
+
+# HSRP Networks (Updated with separate HSRP groups for ISP vs Customer)
+# Upstream VLAN between ISP_Router and INT01/INT02 (ISP-side HSRP)
+upstream_vlan_network: 10.100.100.0/29
+isp_router_upstream_ip: 10.100.100.2       # ISP_Router SVI
+int01_upstream_ip: 10.100.100.3           # INT01 SVI (ISP-side HSRP Group 10)
+int02_upstream_ip: 10.100.100.4           # INT02 SVI (ISP-side HSRP Group 10)
+isp_hsrp_vip: 10.100.100.1                # ISP-side HSRP VIP (Group 10)
+
+# Customer-side HSRP between INT01/INT02 and PaloAlto (Customer-side HSRP)
+customer_vlan_network: 10.100.200.0/29
+int01_customer_ip: 10.100.200.2           # INT01 SVI (Customer-side HSRP Group 20)
+int02_customer_ip: 10.100.200.3           # INT02 SVI (Customer-side HSRP Group 20)
+paloalto_customer_ip: 10.100.200.4        # PaloAlto interface (private IP)
+customer_hsrp_vip: 10.100.200.1           # Customer-side HSRP VIP (Group 20)
+
+# External network for PaloAlto Internet interface (simulated external)
+external_network: 192.168.1.0/24
+paloalto_external_ip: 192.168.1.254       # PaloAlto Internet interface
+external_gateway: 192.168.1.1             # Simulated external gateway
+
+# Point-to-Point Links (Updated device names)
+| Link | Network | Description |
+|------|---------|-------------|
+| Cloudflare_PE01 ↔ Zayo | 198.51.100.0/30 | Cloudflare to Zayo |
+| Cloudflare_PE01 ↔ Bell | 198.51.100.4/30 | Cloudflare to Bell |
+
+# GRE Tunnel Networks (Updated device names)
+tunnel_int01_cf_1: 172.16.1.0/30          # Tunnel 1: INT01 to Cloudflare_PE01
+tunnel_int01_cf_2: 172.16.2.0/30          # Tunnel 2: INT01 to Cloudflare_PE01
+tunnel_int02_cf_1: 172.16.3.0/30          # Tunnel 3: INT02 to Cloudflare_PE01
+tunnel_int02_cf_2: 172.16.4.0/30          # Tunnel 4: INT02 to Cloudflare_PE01
+
+# Tunnel Source IPs (on Cloudflare_PE01 only)
+cf_tunnel_source_1: 203.0.113.10          # Loopback1 on Cloudflare_PE01
+cf_tunnel_source_2: 203.0.113.14          # Loopback2 on Cloudflare_PE01
+
+# Management IP Assignments (Updated device names only)
+mgmt_ips:
+  ISP_ROUTER: 192.168.16.101
+  INT01: 192.168.16.102
+  INT02: 192.168.16.103
+  Cloudflare_PE01: 192.168.16.104
+  Zayo_Router_01: 192.168.16.105
+  Bell_Router_01: 192.168.16.106
+  Google_PE01: 192.168.16.107
+  Server_Test: 192.168.16.108
+  MPLS01: 192.168.16.109
+  MPLS02: 192.168.16.110
+  London_Router_01: 192.168.16.111
+  L2_DC_SW01: 192.168.16.120
+  L2_DC_SW02: 192.168.16.121
+  PaloAlto: 192.168.16.130

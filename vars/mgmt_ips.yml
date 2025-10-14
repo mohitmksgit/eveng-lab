@@ -1,0 +1,17 @@
+# Management IP Assignments (Only renamed cf_ce_01 to Cloudflare_PE01 and Google_PE to Google_PE01)
+mgmt_ips:
+  ISP_ROUTER: 192.168.16.101
+  INT01: 192.168.16.102
+  INT02: 192.168.16.103
+  Cloudflare_PE01: 192.168.16.104
+  Zayo_Router_01: 192.168.16.105
+  Bell_Router_01: 192.168.16.106
+  Google_PE01: 192.168.16.107
+  Server_Test: 192.168.16.108
+  MPLS01: 192.168.16.109
+  MPLS02: 192.168.16.110
+  London_Router_01: 192.168.16.111
+  TEST_SERVER: 192.168.16.112
+  N9K01: 192.168.16.120
+  N9K02: 192.168.16.121
+  PALO_ALTO_FW: 192.168.16.130

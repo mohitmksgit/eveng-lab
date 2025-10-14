@@ -1,0 +1,68 @@
+!
+hostname Zayo_Router_01
+!
+! Enable password and user accounts
+enable secret admin123
+username admin privilege 15 secret admin123
+!
+ip cef
+!
+interface ethernet0/1
+ description Link to ISP_ROUTER
+ ip address 198.51.100.1 255.255.255.252
+ no shutdown
+!
+interface ethernet0/2
+ description Link to Google_PE01
+ ip address 172.16.1.1 255.255.255.252
+ no shutdown
+!
+interface ethernet0/3
+ description Link to Cloudflare_PE01
+ ip address 198.51.100.9 255.255.255.252
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['Zayo_Router_01'] }} 255.255.255.0
+ no shutdown
+!
+router bgp {{ zayo_asn }}
+ bgp log-neighbor-changes
+ neighbor 198.51.100.2 remote-as {{ isp_router_asn }}
+ neighbor 198.51.100.2 description ISP_ROUTER
+ neighbor 172.16.1.2 remote-as {{ google_asn }}
+ neighbor 172.16.1.2 description Google_PE01
+ neighbor 198.51.100.10 remote-as {{ cloudflare_asn }}
+ neighbor 198.51.100.10 description Cloudflare_PE01
+ !
+ address-family ipv4
+  neighbor 198.51.100.2 activate
+  neighbor 172.16.1.2 activate
+  neighbor 198.51.100.10 activate
+ exit-address-family
+!
+! Management access control
+access-list 1 permit 192.168.16.0 0.0.0.255
+access-list 1 deny any log
+!
+! VTY line configuration
+line vty 0 15
+ login local
+ transport input ssh
+ access-class 1 in
+ exec-timeout 30 0
+ logging synchronous
+!
+! Console line configuration
+line console 0
+ login local
+ exec-timeout 30 0
+ logging synchronous
+!
+! SSH configuration
+ip ssh version 2
+ip domain-name lab.local
+crypto key generate rsa modulus 1024
+!
+end

@@ -1,0 +1,107 @@
+!
+hostname INT02
+!
+! Enable password and user accounts
+enable secret admin123
+username admin privilege 15 secret admin123
+!
+ip cef
+!
+! Upstinterface Tunnel1
+ description GRE Tunnel 3 to Cloudflare_PE01
+ ip address 172.16.3.1 255.255.255.252
+ tunnel source {{ int02_upstream_ip }}
+ tunnel destination {{ cf_tunnel_source_1 }}
+ tunnel mode gre ip
+!
+interface Tunnel2
+ description GRE Tunnel 4 to Cloudflare_PE01
+ ip address 172.16.4.1 255.255.255.252
+ tunnel source {{ int02_upstream_ip }}
+ tunnel destination {{ cf_tunnel_source_2 }}
+ tunnel mode gre ipards ISP_Router (HSRP Group 1)
+vlan 100
+ name UPSTREAM_TO_ISP
+!
+! Customer VLAN towards PaloAlto (HSRP Group 2)
+vlan 200
+ name CUSTOMER_TO_PALOALTO
+!
+interface Vlan100
+ description HSRP SVI to ISP_Router (ISP-side Group 10)
+ ip address {{ int02_upstream_ip }} 255.255.255.248
+ standby 10 ip {{ isp_hsrp_vip }}
+ standby 10 priority 105
+ no shutdown
+!
+interface Vlan200
+ description HSRP SVI to PaloAlto (Customer-side Group 20)
+ ip address {{ int02_customer_ip }} 255.255.255.248
+ standby 20 ip {{ customer_hsrp_vip }}
+ standby 20 priority 105
+ no shutdown
+!
+interface ethernet0/1
+ description Trunk to ISP_Router
+ switchport mode trunk
+ switchport trunk allowed vlan 100
+ no shutdown
+!
+interface ethernet0/2
+ description Trunk to INT01
+ switchport mode trunk
+ switchport trunk allowed vlan 100,200
+ no shutdown
+!
+interface Tunnel3
+ description GRE Tunnel 3 to Cloudflare_PE01
+ ip address 172.16.3.1 255.255.255.252
+ tunnel source Vlan200
+ tunnel destination {{ cf_tunnel_source_1 }}
+ tunnel mode gre ip
+!
+interface Tunnel4
+ description GRE Tunnel 4 to Cloudflare_PE01
+ ip address 172.16.4.1 255.255.255.252
+ tunnel source Vlan200
+ tunnel destination {{ cf_tunnel_source_2 }}
+ tunnel mode gre ip
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['INT02'] }} 255.255.255.0
+ no shutdown
+!
+router bgp {{ int_routers_asn }}
+ bgp log-neighbor-changes
+ neighbor {{ int01_customer_ip }} remote-as {{ int_routers_asn }}
+ neighbor {{ int01_customer_ip }} description INT01_iBGP
+ neighbor 172.16.3.2 remote-as {{ cloudflare_asn }}
+ neighbor 172.16.3.2 description Cloudflare_PE01_Tunnel3
+ neighbor 172.16.4.2 remote-as {{ cloudflare_asn }}
+ neighbor 172.16.4.2 description Cloudflare_PE01_Tunnel4
+ !
+ address-family ipv4
+  network 10.100.0.0 mask 255.255.0.0
+  neighbor {{ int01_customer_ip }} activate
+  neighbor {{ int01_customer_ip }} next-hop-self
+  neighbor 172.16.3.2 activate
+  neighbor 172.16.4.2 activate
+ exit-address-family
+!
+! Default route via ISP-side HSRP VIP
+ip route 0.0.0.0 0.0.0.0 {{ isp_hsrp_vip }}
+! Customer NAT range - route to PaloAlto (summary route only)
+ip route 23.249.100.0 255.255.252.0 {{ paloalto_customer_ip }}
+! Customer NAT range - route to PaloAlto (summary route only)
+ip route 23.249.100.0 255.255.252.0 {{ paloalto_customer_ip }}
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ access-class 1 in
+ transport input ssh
+!
+ip ssh version 2
+!
+end

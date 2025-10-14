@@ -1,0 +1,98 @@
+# Interface Mapping Variables
+# Updated - removed Zayo, London, Equinix connections
+
+# ISP_ROUTER Interface Mapping (AS 15830) - ISP_Router is Equinix
+# Connected to: INT01, INT02, Bell_Router_01
+isp_router_interfaces:
+  to_int01: "ethernet0/1"      # e0/1 -> INT01
+  to_int02: "ethernet0/2"      # e0/2 -> INT02
+  to_bell: "ethernet1/0"       # e1/0 -> Bell_Router_01
+  management: "ethernet0/0"    # Management interface
+
+# Cloudflare_PE01 Interface Mapping (AS 13335)
+# Connected to: Bell_Router_01
+cloudflare_pe01_interfaces:
+  to_bell: "ethernet0/2"       # e0/2 -> Bell_Router_01
+  management: "ethernet0/0"    # Management interface
+
+# Bell_Router_01 Interface Mapping (AS 577)
+# Connected to: Cloudflare_PE01, Google_PE01, ISP_ROUTER
+bell_interfaces:
+  to_cf: "ethernet0/2"         # e0/2 -> CF_CE_01
+  to_google: "ethernet0/1"     # e0/1 -> Google_PE_01
+  to_isp: "ethernet1/0"        # e1/0 -> ISP_ROUTER
+  management: "ethernet0/0"    # Management interface
+
+# Google_PE_01 Interface Mapping (AS 15169)
+# Connected to: Bell_Router_01, Zayo_Router_01, Server_Test
+google_pe_interfaces:
+  to_bell: "ethernet0/1"       # e0/1 -> Bell_Router_01
+  to_zayo: "ethernet0/2"       # e0/2 -> Zayo_Router_01
+  to_server: "ethernet0/3"     # e0/3 -> Server_Test
+  management: "ethernet0/0"    # Management interface
+
+# Server_Test Interface Mapping
+# Connected to: Google_PE_01
+server_test_interfaces:
+  to_google: "ethernet0/1"     # e0/1 -> Google_PE_01
+  management: "ethernet0/0"    # Management interface
+
+# PaloAlto Firewall Interface Mapping
+# Connected to: L2 to INT01 & INT02, L2_DC_SW01, L2_DC_SW02
+palo_alto_interfaces:
+  to_l2_int: "ethernet1/1"     # e1/1 -> L2 to INT01 & INT02
+  to_l2_sw02: "ethernet1/2"    # e1/2 -> L2_DC_SW02 (VLAN 200)
+  to_l2_sw01: "ethernet1/3"    # e1/3 -> L2_DC_SW01 (VLAN 100)
+
+# L2_DC_SW01 Interface Mapping (VLAN 100)
+# Connected to: PaloAlto
+l2_dc_sw01_interfaces:
+  to_paloalto: "ethernet0/1"   # e0/1 -> PaloAlto e1/3
+  port2: "ethernet0/2"         # e0/2
+  port3: "ethernet0/3"         # e0/3
+  port4: "ethernet1/0"         # e1/0
+
+# L2_DC_SW02 Interface Mapping (VLAN 200)  
+# Connected to: PaloAlto, N9K02, N9K01
+l2_dc_sw02_interfaces:
+  to_paloalto: "ethernet0/1"   # e0/1 -> PaloAlto e1/2
+  to_n9k02: "ethernet0/2"      # e0/2 -> N9K02
+  to_n9k01: "ethernet0/3"      # e0/3 -> N9K01
+
+# MPLS01 Interface Mapping (AS 65001)
+# Connected to: N9K02, London_Router_01, MPLS02, N9K01
+mpls01_interfaces:
+  to_n9k02: "ethernet0/1"      # e0/1 -> N9K02
+  to_london: "ethernet0/2"     # e0/2 -> London_Router_01
+  to_mpls02: "ethernet0/3"     # e0/3 -> MPLS02
+  to_n9k01: "ethernet1/0"      # e1/0 -> N9K01
+  management: "ethernet0/0"    # Management interface
+
+# MPLS02 Interface Mapping (AS 65001)
+# Connected to: N9K01, N9K02, MPLS01, London_Router_01
+mpls02_interfaces:
+  to_n9k01: "ethernet0/1"      # e0/1 -> N9K01
+  to_n9k02: "ethernet1/1"      # e1/1 -> N9K02
+  to_mpls01: "ethernet0/3"     # e0/3 -> MPLS01
+  to_london: "ethernet1/0"     # e1/0 -> London_Router_01
+  management: "ethernet0/0"    # Management interface
+
+# London_Router_01 Interface Mapping (AS 65300)
+# Connected to: MPLS01, LAN Switch, MPLS02
+london_router_interfaces:
+  to_mpls01: "ethernet0/1"     # e0/1 -> MPLS01
+  to_lan_switch: "ethernet0/2" # e0/2 -> LAN Switch
+  to_mpls02: "ethernet1/0"     # e1/0 -> MPLS02
+  management: "ethernet0/0"    # Management interface
+
+# Based on the CSV, the topology appears different from original assumptions
+# Key changes:
+# 1. No INT01/INT02 routers mentioned in CSV
+# 2. ISP_ROUTER connects directly to Zayo and Bell
+# 3. CF_CE_01 connects only to Zayo and Bell (not INT routers)
+# 4. N9K switches connect to MPLS routers instead of INT routers
+# 5. Two L2 switches (L2_DC_SW01, L2_DC_SW02) for VLANs
+# 6. All interfaces use ethernet format (e0/1, e0/2, e1/0, etc.)
+
+# Note: This topology is significantly different from the original design
+# Templates will need major updates to match this new topology

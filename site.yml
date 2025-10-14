@@ -1,0 +1,20 @@
+---
+- name: Deploy Network Configuration
+  hosts: all
+  gather_facts: no
+  vars_files:
+    - vars/network_vars.yml
+    - vars/interface_mapping.yml
+  
+  tasks:
+    - name: Configure Cisco IOS Devices
+      include_tasks: tasks/ios_config.yml
+      when: ansible_network_os == 'ios'
+    
+    - name: Configure Cisco Switch Devices  
+      include_tasks: tasks/ios_config.yml
+      when: inventory_hostname in groups['cisco_switches']
+    
+    - name: Configure Palo Alto Firewall
+      include_tasks: tasks/panos_config.yml
+      when: ansible_network_os == 'panos'

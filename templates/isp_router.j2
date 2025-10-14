@@ -1,0 +1,81 @@
+!
+hostname ISP_ROUTER
+!
+! Enable password and user accounts
+enable secret admin123
+username admin privilege 15 secret admin123
+!
+ip cef
+!
+! Upstream VLAN towards INT01/INT02
+vlan 100
+ name UPSTREAM_TO_INT_ROUTERS
+!
+interface Vlan100
+ description HSRP SVI to INT01/INT02 (ISP-side)
+ ip address {{ isp_router_upstream_ip }} 255.255.255.248
+ standby 10 ip {{ isp_hsrp_vip }}
+ standby 10 priority 105
+ standby 10 preempt
+ no shutdown
+!
+interface ethernet0/1
+ description Trunk to INT01
+ switchport mode trunk
+ switchport trunk allowed vlan 100
+ no shutdown
+!
+interface ethernet0/2
+ description Trunk to INT02
+ switchport mode trunk
+ switchport trunk allowed vlan 100
+ no shutdown
+!
+interface ethernet0/3
+ description Link to Zayo_Router_01
+ ip address 198.51.100.2 255.255.255.252
+ no shutdown
+!
+interface ethernet1/0
+ description Link to Bell_Router_01
+ ip address 198.51.100.14 255.255.255.252
+ no shutdown
+!
+interface ethernet0/0
+ description Management Interface
+ ip address {{ mgmt_ips['ISP_ROUTER'] }} 255.255.255.0
+ no shutdown
+!
+! Static route for customer NAT prefix (summary route)
+ip route 23.249.100.0 255.255.252.0 {{ isp_hsrp_vip }}
+!
+! BGP configuration to receive Internet routes and advertise customer routes
+router bgp {{ isp_router_asn }}
+ bgp log-neighbor-changes
+ neighbor 198.51.100.1 remote-as {{ zayo_asn }}
+ neighbor 198.51.100.1 description Zayo_Router_01
+ neighbor 198.51.100.14 remote-as {{ bell_asn }}
+ neighbor 198.51.100.14 description Bell_Router_01
+ !
+ address-family ipv4
+  network 23.249.100.0 mask 255.255.252.0
+  neighbor 198.51.100.1 activate
+  neighbor 198.51.100.14 activate
+ exit-address-family
+!
+access-list 1 permit 192.168.16.0 0.0.0.255
+!
+line vty 0 4
+ login local
+ transport input ssh
+ exec-timeout 30 0
+!
+line console 0
+ login local
+ exec-timeout 30 0
+!
+ip ssh version 2
+ip domain-name lab.local
+crypto key generate rsa modulus 1024
+!
+end

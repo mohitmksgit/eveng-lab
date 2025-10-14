@@ -1,0 +1,96 @@
+!
+hostname N9K01
+!
+feature vpc
+feature hsrp
+feature interface-vlan
+feature bgp
+!
+vpc domain 1
+  role priority 100
+  peer-keepalive destination 10.100.20.2 source 10.100.20.1
+  peer-switch
+  peer-gateway
+  auto-recovery
+!
+interface mgmt0
+  ip address {{ mgmt_ips['N9K01'] }}/24
+  no shutdown
+!
+vrf context management
+  ip route 0.0.0.0/0 {{ mgmt_gateway }}
+!
+interface port-channel1
+  description VPC Peer Link
+  switchport mode trunk
+  spanning-tree port type network
+  vpc peer-link
+!
+interface port-channel100
+  description Connection to Palo Alto
+  switchport mode trunk
+  vpc 100
+!
+interface Ethernet1/1
+  description Link to INT01
+  no switchport
+  ip address 10.100.10.2/30
+  no shutdown
+!
+interface Ethernet1/2
+  description VPC Peer Link to N9K02
+  switchport mode trunk
+  channel-group 1 mode active
+  no shutdown
+!
+interface Ethernet1/3
+  description VPC Peer Link to N9K02
+  switchport mode trunk
+  channel-group 1 mode active
+  no shutdown
+!
+interface Ethernet1/4
+  description VPC Keepalive to N9K02
+  no switchport
+  ip address 10.100.20.1/30
+  no shutdown
+!
+interface Ethernet1/5
+  description Connection to Palo Alto
+  switchport mode trunk
+  channel-group 100 mode active
+  no shutdown
+!
+vlan 100
+  name LAN_VLAN
+!
+vlan 200
+  name SERVER_VLAN
+!
+interface vlan100
+  description LAN SVI
+  ip address 10.100.1.2/24
+  hsrp 1
+    ip 10.100.1.1
+    priority 110
+    preempt
+  no shutdown
+!
+interface vlan200
+  description SERVER SVI
+  ip address 10.100.2.2/24
+  hsrp 2
+    ip 10.100.2.1
+    priority 110
+    preempt
+  no shutdown
+!
+router bgp {{ customer_asn }}
+  router-id 10.100.1.2
+  address-family ipv4 unicast
+    network 10.100.1.0/24
+    network 10.100.2.0/24
+!
+ip route 0.0.0.0/0 10.100.10.1
+!
+end
